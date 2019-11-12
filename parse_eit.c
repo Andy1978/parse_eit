@@ -105,7 +105,7 @@ uint8_t parse_start_time (const uint8_t *p, size_t len, struct s_start_time *s)
 
 void dump (const uint8_t *p, size_t len)
 {
-  for (int k = 0; k < len; ++k)
+  for (unsigned int k = 0; k < len; ++k)
     printf ("%3i : 0x%02x  %3i '%c'\n", k, p[k], p[k], p[k]);
 }
 
@@ -125,39 +125,47 @@ void dump_text (const uint8_t *p, size_t len)
 
   printf ("code_table = 0x%02x\n", code_table);
 
-  size_t outbytesleft = 200;
-  char *out = (char *) malloc (outbytesleft);
-
-  iconv (ic_latin_5, NULL, NULL, &out, &outbytesleft);
+  size_t outbytesleft = 800;
+  char *outbuf = (char *) malloc (outbytesleft);
 
   if (code_table == 0x15)
     ;//printf ("UTF-8 encoding of ISO/IEC 10646 [14], Basic Multilingual Plane (BMP)\n");
   else if (code_table == 0x05)
      // ISO/IEC 8859-9 [25] z.B. bei simpsons.eit
     {
-      size_t nconv = iconv (ic_latin_5, (char **)&p, &len, &out, &outbytesleft);
+      char *pout = outbuf;
+      char *pin = p;
+      iconv (ic_latin_5, NULL, NULL, &pout, &outbytesleft);
+      size_t nconv = iconv (ic_latin_5, &pin, &len, &pout, &outbytesleft);
+
+      *pout = 0;
+      printf ("nconv = %i\n", nconv);
+      printf ("outbuf = '%s'\n", outbuf);
+      
     }
   else
     printf ("code_table %#x not known...\n", code_table);
 
   printf ("---");
 
+  // FIXME: Die cr/lf ersetzung sollte man besser vorher machen
+
   // wtf? 0xC28A ist wohl CR/LF, Seite 130 Annex A
 
-  for (int k = 0; k < (len - (code_table > 0)); ++k)
-    {
-      // FIMXE: check for buffer end
-      if (   p[k] == 0xC2
-          && k +1 < (len - (code_table > 0))
-          && p[k+1] == 0x8A)
-        k++; //ignore CR/LF
-      else
-        printf ("%c", p[k]);
-    }
+  //~ for (unsigned int k = 0; k < (len - (code_table > 0)); ++k)
+    //~ {
+      //~ // FIMXE: check for buffer end
+      //~ if (   p[k] == 0xC2
+          //~ && k +1 < (len - (code_table > 0))
+          //~ && p[k+1] == 0x8A)
+        //~ k++; //ignore CR/LF
+      //~ else
+        //~ printf ("%c", p[k]);
+    //~ }
 
   printf ("---\n");
 
-  free (out);
+  free (outbuf);
 }
 
 int main (int argc, char *argv[])
@@ -199,22 +207,6 @@ int main (int argc, char *argv[])
       exit (-1);
     }
 
-  char *inbuf = strdup ("hello");
-  size_t insize = 5;
-
-
-  size_t outbuf_size = 500;
-  char *outbuf = (char *) malloc (outbuf_size);
-
-  iconv (ic_latin_5, NULL, NULL, &outbuf, &outbuf_size);
-
-  iconv (ic_latin_5, &inbuf, &insize, &outbuf, &outbuf_size);
-
-  free (inbuf);
-  //free (outbuf);
-
-  return 0;
-
   // 5.2.4 Event Information Table (EIT), Seite 35:
   int event_id = p[0] << 8 | p[1];
   printf ("event_id = %i\n", event_id);
@@ -251,7 +243,7 @@ int main (int argc, char *argv[])
 
   while (p < (buf + num))
   {
-    printf ("Bytes left: %i\n", buf + num - p);
+    printf ("Bytes left: %li\n", buf + num - p);
 
     uint8_t descriptor_tag = p[0];
     printf ("descriptor_tag = %#x\n", descriptor_tag);
@@ -326,7 +318,7 @@ int main (int argc, char *argv[])
 
         // hier keine Länge, muss man sich wohl aus descriptor_length berechnen
         size_t len = descriptor_length - 6;
-        printf ("len = zu\n", len);
+        printf ("len = %zu\n", len);
         dump_text (p, len);
         p += len;
 
@@ -340,12 +332,6 @@ int main (int argc, char *argv[])
   }
 
   printf ("End: Bytes left: %li\n", buf + num - p);
-
-  printf ("äöü\n");
-  uint8_t foo[] = "äöü";
-
-  printf ("%u %s\n", strlen ((char*)foo), foo);
-  dump (foo, 6);
 
   if (iconv_close (ic_latin_5) != 0)
     perror ("iconv_close");
