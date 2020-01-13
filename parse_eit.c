@@ -7,6 +7,10 @@
 
   Gibt die Informationen ine einer DreamBox 7025+ (vielleicht auch andere)
   .eit Datei als Text aus.
+
+  Probleme:
+    - den Text muss man escapen, da auch " darin vorkommt, siehe Schneewelt1.eit
+
 */
 
 
@@ -249,7 +253,7 @@ void dump_text (uint8_t *p, size_t len)
   //printf ("nconv = %zi\n", nconv);
   //printf ("outbuf = '%s'\n", outbuf);
 
-  assert (nconv == 0);
+  //assert (nconv == 0);
 
   printf ("%s", outbuf);
 
@@ -283,11 +287,14 @@ int main (int argc, char *argv[])
       fprintf (stderr, "ERROR: No input file...\n\nUSAGE: %s EIT\n", argv[0]);
       exit (-1);
     }
-
+  printf ("[\n");
   FILE *fp;
   for (int k = 1; k < argc; ++k)
     {
       const char *fn = argv[k];
+      printf (" {\n");
+
+      printf ("  \"filename\": \"%s\",\n", fn);
 
       fp = fopen (fn, "rb");
       if (!fp)
@@ -299,10 +306,7 @@ int main (int argc, char *argv[])
       #define BUF_SIZE 2000
       uint8_t buf[BUF_SIZE];
       size_t num = fread (buf, 1, BUF_SIZE, fp);
-
-#ifdef DEBUG
-      printf ("num (size of buffer) = %zu\n", num);
-#endif
+      printf ("  \"num_bytes\": %i,\n", num);
 
       if (num == BUF_SIZE)
         {
@@ -316,17 +320,14 @@ int main (int argc, char *argv[])
 
       // 5.2.4 Event Information Table (EIT), Seite 35:
       int event_id = p[0] << 8 | p[1];
-      printf ("event_id = %i\n", event_id);
       p += 2;
 
       struct s_start_time st;
       uint8_t r = parse_start_time (p, num - (p - buf), &st);
-      printf ("start_time = %i/%i/%i %02i:%02i:%02i\n", st.Y, st.M, st.D, st.t.hour, st.t.minute, st.t.second);
       p += r;
 
       struct s_duration dur;
       r = parse_duration (p, num - (p - buf), &dur);
-      printf ("duration = %02i:%02i:%02i\n", dur.hour, dur.minute, dur.second);
       p += r;
 
       // running_status
@@ -336,11 +337,13 @@ int main (int argc, char *argv[])
       uint8_t free_CA_mode   = (p[0] >> 3) & 0x01;
       uint16_t descriptors_loop_length = (p[0] & 0xF0) << 8 | p[1];
 
-#ifdef DEBUG
-      printf ("running_status = %i\n", running_status);
-      printf ("free_CA_mode = %i\n", free_CA_mode);
-      printf ("descriptors_loop_length = %i\n", descriptors_loop_length);
-#endif
+      printf ("  \"event_id\": %i,\n", event_id);
+      printf ("  \"start_time\": \"%i/%i/%i %02i:%02i:%02i\",\n", st.Y, st.M, st.D, st.t.hour, st.t.minute, st.t.second);
+      printf ("  \"duration\": \"%02i:%02i:%02i\",\n", dur.hour, dur.minute, dur.second);
+      printf ("  \"running_status\": %i,\n", running_status);
+      printf ("  \"free_CA_mode\": %i,\n", free_CA_mode);
+      
+      //printf ("descriptors_loop_length = %i\n", descriptors_loop_length);
 
       p += 2;
 
@@ -349,59 +352,67 @@ int main (int argc, char *argv[])
       #define EXTENDED_EVENT_DESCRIPTOR 0x4e
       #define COMPONENT_DESCRIPTOR 0x50
 
+      uint8_t last_descriptor_tag = 0;
+      char first_descriptor = 1;
       while (p < (buf + num))
       {
         uint8_t descriptor_tag = p[0];
         uint8_t descriptor_length = p[1];
 
-#ifdef DEBUG
-        printf ("Bytes left: %li\n", buf + num - p);
-        printf ("descriptor_tag = %#x\n", descriptor_tag);
-        printf ("descriptor_length = %i\n", descriptor_length);  // Länge der folgenden Daten in Bytes
-#endif
+        //fprintf (stderr, "Bytes left: %li\n", buf + num - p);
+        //fprintf (stderr, "descriptor_tag = %#x\n", descriptor_tag);
+        //fprintf (stderr, "descriptor_length = %i\n", descriptor_length);  // Länge der folgenden Daten in Bytes
 
         p += 2;
 
         // Seite 87, Kapitel 6.2.37 : Short event descriptor
         if (descriptor_tag == SHORT_EVENT_DESCRIPTOR)
           {
-#ifdef DEBUG
-            printf ("SHORT_EVENT_DESCRIPTOR\n");
-            printf ("iso_639_2_language_code = \"%c%c%c\"\n", p[0], p[1], p[2]);
-#endif
+            printf ("  \"short_event_descriptor\":\n  {\n");
+            printf ("    \"iso_639_2_language_code\": \"%c%c%c\",\n", p[0], p[1], p[2]);
+
             p += 3;
 
             uint8_t event_name_length = p[0];
-#ifdef DEBUG
-            printf ("event_name_length = %i\n", event_name_length);
-#endif
+            printf ("    \"event_name_length\": %i,\n", event_name_length);
             p += 1;
 
+            printf ("    \"event_name\": \"");
             dump_text (p, event_name_length);
+            printf ("\",\n");
+
             p += event_name_length;
 
             uint8_t text_length = p[0];
-#ifdef DEBUG
-            printf ("text_length = %i\n", text_length);
-#endif
+            printf ("    \"text_length\": %i,\n", text_length);
             p += 1;
 
+            printf ("    \"text\": \"");
             dump_text (p, text_length);
+            printf ("\"\n  },\n");
             p += text_length;
           }
         // Seite 64, Kapitel 6.2.15 : Extended event descriptor
         else if (descriptor_tag == EXTENDED_EVENT_DESCRIPTOR)
           {
+            //printf ("EXTENDED_EVENT_DESCRIPTOR\n");
+
             uint8_t descriptor_number = p[0] >> 4;
             uint8_t last_descriptor_number = p[0] & 0x0F;
             p += 1;
 
 #ifdef DEBUG
-            printf ("EXTENDED_EVENT_DESCRIPTOR\n");
             printf ("descriptor_number = %i\n", descriptor_number);
             printf ("last_descriptor_number = %i\n", last_descriptor_number);
-            printf ("iso_639_2_language_code = \"%c%c%c\"\n", p[0], p[1], p[2]);
 #endif
+
+            if (descriptor_number == 0)
+              {
+                printf ("  \"extended_event_descriptor\":\n  {\n");
+                printf ("    \"iso_639_2_language_code\": \"%c%c%c\",\n", p[0], p[1], p[2]);
+                printf ("    \"text\": \"");
+              }
+
             p += 3;
 
             // Tabelle 53, Seite 64
@@ -418,6 +429,11 @@ int main (int argc, char *argv[])
             //printf ("text_length = %i\n", text_length);
 
             dump_text (p, text_length);
+
+            // Sind wir am Ende?
+            if (descriptor_number == last_descriptor_number)
+              printf ("\"\n  }\n");
+
             p += text_length;
           }
         // Seite 46, Kapitel 6.2.8
@@ -438,10 +454,15 @@ int main (int argc, char *argv[])
 #endif
             p += 6;
 
+            //if (last_descriptor_tag != COMPONENT_DESCRIPTOR)
+            //  printf ("  \"component_descriptor\":\n  {\n");
+
+            //printf ("    \"text\": \"");
             // hier keine Länge, muss man sich wohl aus descriptor_length berechnen
             size_t len = descriptor_length - 6;
             //printf ("len = %zu\n", len);
-            dump_text (p, len);
+            //dump_text (p, len);
+            //printf ("\"\n  }\n");
             p += len;
 
           }
@@ -451,13 +472,16 @@ int main (int argc, char *argv[])
             exit (-1);
           }
 
+        last_descriptor_tag = descriptor_tag;
+        first_descriptor = 0;
       }
 
 #ifdef DEBUG
       printf ("End: Bytes left: %li\n", buf + num - p);
 #endif
+    printf ("}\n");
   }
-
+  printf ("]\n");
   return 0;
 }
 
