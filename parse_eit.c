@@ -18,6 +18,8 @@
 #include <inttypes.h>
 #include <assert.h>
 
+//#define DEBUG
+
 struct s_duration
 {
   int hour;
@@ -114,7 +116,7 @@ void dump_text (uint8_t *p, size_t len)
   // the default character coding table (table 00 - Latin alphabet)
   const char *code_table = "ISO-8859-1";
   uint8_t first_byte_value = *p;
-  printf ("first_byte_value = 0x%02x\n", first_byte_value);
+  //printf ("first_byte_value = 0x%02x\n", first_byte_value);
   if (first_byte_value < 0x20)
     {
       p++;
@@ -224,7 +226,7 @@ void dump_text (uint8_t *p, size_t len)
     }
 
 
-  printf ("xcode_table = '%s'\n", code_table);
+  //printf ("code_table = '%s'\n", code_table);
 
   iconv_t cd;
 
@@ -244,12 +246,12 @@ void dump_text (uint8_t *p, size_t len)
   size_t nconv = iconv (cd, &pin, &len, &pout, &outbytesleft);
 
   *pout = 0;
-  printf ("nconv = %zi\n", nconv);
-  printf ("outbuf = '%s'\n", outbuf);
+  //printf ("nconv = %zi\n", nconv);
+  //printf ("outbuf = '%s'\n", outbuf);
 
   assert (nconv == 0);
 
-  printf ("---");
+  printf ("%s", outbuf);
 
   // FIXME: Die cr/lf ersetzung sollte man besser vorher machen
   // andererseits steht da, das wäre die utf-8 sequence...
@@ -267,7 +269,6 @@ void dump_text (uint8_t *p, size_t len)
         //~ printf ("%c", p[k]);
     //~ }
 
-  printf ("---\n");
 
   if (iconv_close (cd) != 0)
     perror ("iconv_close");
@@ -298,7 +299,10 @@ int main (int argc, char *argv[])
       #define BUF_SIZE 2000
       uint8_t buf[BUF_SIZE];
       size_t num = fread (buf, 1, BUF_SIZE, fp);
+
+#ifdef DEBUG
       printf ("num (size of buffer) = %zu\n", num);
+#endif
 
       if (num == BUF_SIZE)
         {
@@ -329,13 +333,14 @@ int main (int argc, char *argv[])
       // undefined = 0, not_running, starts_in_a_few_seconds, pausing, running, serive_off_air, reserved1, reserved2
 
       uint8_t running_status = p[0] & 0x03;
-      printf ("running_status = %i\n", running_status);
-
       uint8_t free_CA_mode   = (p[0] >> 3) & 0x01;
-      printf ("free_CA_mode = %i\n", free_CA_mode);
-
       uint16_t descriptors_loop_length = (p[0] & 0xF0) << 8 | p[1];
+
+#ifdef DEBUG
+      printf ("running_status = %i\n", running_status);
+      printf ("free_CA_mode = %i\n", free_CA_mode);
       printf ("descriptors_loop_length = %i\n", descriptors_loop_length);
+#endif
 
       p += 2;
 
@@ -346,32 +351,39 @@ int main (int argc, char *argv[])
 
       while (p < (buf + num))
       {
-        printf ("Bytes left: %li\n", buf + num - p);
-
         uint8_t descriptor_tag = p[0];
-        printf ("descriptor_tag = %#x\n", descriptor_tag);
-
         uint8_t descriptor_length = p[1];
+
+#ifdef DEBUG
+        printf ("Bytes left: %li\n", buf + num - p);
+        printf ("descriptor_tag = %#x\n", descriptor_tag);
         printf ("descriptor_length = %i\n", descriptor_length);  // Länge der folgenden Daten in Bytes
+#endif
 
         p += 2;
 
         // Seite 87, Kapitel 6.2.37 : Short event descriptor
         if (descriptor_tag == SHORT_EVENT_DESCRIPTOR)
           {
+#ifdef DEBUG
             printf ("SHORT_EVENT_DESCRIPTOR\n");
             printf ("iso_639_2_language_code = \"%c%c%c\"\n", p[0], p[1], p[2]);
+#endif
             p += 3;
 
             uint8_t event_name_length = p[0];
+#ifdef DEBUG
             printf ("event_name_length = %i\n", event_name_length);
+#endif
             p += 1;
 
             dump_text (p, event_name_length);
             p += event_name_length;
 
             uint8_t text_length = p[0];
+#ifdef DEBUG
             printf ("text_length = %i\n", text_length);
+#endif
             p += 1;
 
             dump_text (p, text_length);
@@ -380,19 +392,21 @@ int main (int argc, char *argv[])
         // Seite 64, Kapitel 6.2.15 : Extended event descriptor
         else if (descriptor_tag == EXTENDED_EVENT_DESCRIPTOR)
           {
-            printf ("EXTENDED_EVENT_DESCRIPTOR\n");
             uint8_t descriptor_number = p[0] >> 4;
             uint8_t last_descriptor_number = p[0] & 0x0F;
             p += 1;
 
+#ifdef DEBUG
+            printf ("EXTENDED_EVENT_DESCRIPTOR\n");
             printf ("descriptor_number = %i\n", descriptor_number);
             printf ("last_descriptor_number = %i\n", last_descriptor_number);
             printf ("iso_639_2_language_code = \"%c%c%c\"\n", p[0], p[1], p[2]);
+#endif
             p += 3;
 
             // Tabelle 53, Seite 64
             uint8_t length_of_items = *(p++);   // kann auch 0 sein
-            printf ("length_of_items = %i\n", length_of_items);
+            //printf ("length_of_items = %i\n", length_of_items);
 
             if (length_of_items > 0)
               {
@@ -401,7 +415,7 @@ int main (int argc, char *argv[])
               }
 
             uint8_t text_length = *(p++);
-            printf ("text_length = %i\n", text_length);
+            //printf ("text_length = %i\n", text_length);
 
             dump_text (p, text_length);
             p += text_length;
@@ -409,22 +423,24 @@ int main (int argc, char *argv[])
         // Seite 46, Kapitel 6.2.8
         else if (descriptor_tag == COMPONENT_DESCRIPTOR)
           {
-            printf ("COMPONENT_DESCRIPTOR\n");
             uint8_t stream_content_ext = p[0] >> 4;
             uint8_t stream_content = p[0] & 0x0F;
             uint8_t component_type = p[1];
             uint8_t component_tag = p[2];
 
+#ifdef DEBUG
+            printf ("COMPONENT_DESCRIPTOR\n");
             printf ("stream_content_ext = %i\n", stream_content_ext);
             printf ("stream_content = %i\n", stream_content);
             printf ("component_type = %i\n", component_type);
             printf ("component_tag = %i\n", component_tag);
             printf ("iso_639_2_language_code = \"%c%c%c\"\n", p[3], p[4], p[5]);
+#endif
             p += 6;
 
             // hier keine Länge, muss man sich wohl aus descriptor_length berechnen
             size_t len = descriptor_length - 6;
-            printf ("len = %zu\n", len);
+            //printf ("len = %zu\n", len);
             dump_text (p, len);
             p += len;
 
@@ -436,7 +452,10 @@ int main (int argc, char *argv[])
           }
 
       }
+
+#ifdef DEBUG
       printf ("End: Bytes left: %li\n", buf + num - p);
+#endif
   }
 
   return 0;
