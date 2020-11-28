@@ -110,7 +110,7 @@ void dump (const uint8_t *p, size_t len)
     printf ("%3i : 0x%02x  %3i '%c'\n", k, p[k], p[k], p[k]);
 }
 
-void dump_text (uint8_t *p, size_t len)
+int text_to_utf8 (char *buf, size_t buflen, uint8_t *p, size_t len)
 {
   //uint8_t * const p_orig = p;
   // Annex A, Seite 130
@@ -120,6 +120,7 @@ void dump_text (uint8_t *p, size_t len)
   // the default character coding table (table 00 - Latin alphabet)
   const char *code_table = "ISO-8859-1";
   uint8_t first_byte_value = *p;
+
   //printf ("first_byte_value = 0x%02x\n", first_byte_value);
   if (first_byte_value < 0x20)
     {
@@ -241,23 +242,36 @@ void dump_text (uint8_t *p, size_t len)
       exit (-1);
     }
 
-  size_t outbytesleft = 1200;
-  char *outbuf = (char *) malloc (outbytesleft);
-
-  char *pout = outbuf;
+  size_t outbytesleft = buflen;
+  char *pout = buf;
   char *pin = p;
+
   iconv (cd, NULL, NULL, &pout, &outbytesleft);
   size_t nconv = iconv (cd, &pin, &len, &pout, &outbytesleft);
-
-  *pout = 0;
+  
   //printf ("nconv = %zi\n", nconv);
+
+  if (nconv == (size_t) -1)
+    {
+      fprintf (stderr, "ERROR: iconv failed with '%s'", strerror (errno));
+      
+      if (nconv == EILSEQ)
+        fprintf (stderr, ": invalid multibyte sequence '%s'\n", pin);
+      else if (nconv == EINVAL)
+        fprintf (stderr, ": incomplete multibyte sequence '%s'\n", pin);
+      else if (nconv == E2BIG)
+        fprintf (stderr, ": output buffer too small\n");
+      else
+        fprintf (stderr, "\n");
+    }
+  else
+    *pout = 0;
+
   //printf ("outbuf = '%s'\n", outbuf);
-
   //assert (nconv == 0);
+  //printf ("%s", outbuf);
 
-  printf ("%s", outbuf);
-
-  // FIXME: Die cr/lf ersetzung sollte man besser vorher machen
+  // FIXME: Die CR/LF Ersetzung sollte man besser vorher machen
   // andererseits steht da, das wäre die utf-8 sequence...
 
   // wtf? 0xC28A ist wohl CR/LF, Seite 130 Annex A
@@ -276,8 +290,33 @@ void dump_text (uint8_t *p, size_t len)
 
   if (iconv_close (cd) != 0)
     perror ("iconv_close");
+  
+  return nconv;
+}
+
+void print_JSON_escaped (const char *p)
+{
+  while (*p)
+    {
+      if (*p == '"' || *p == '\\' || ('\x00' <= *p && *p <= '\x1f'))
+        printf ("\\u%04x", (int)*p);
+      else
+        putchar (*p);
+      p++;
+    }
+}
+
+void dump_text (uint8_t *p, size_t len)
+{
+  size_t outbytesleft = 2048;
+  char *outbuf = (char *) malloc (outbytesleft);
+
+  text_to_utf8 (outbuf, outbytesleft, p, len);
+  
+  print_JSON_escaped (outbuf);
 
   free (outbuf);
+  
 }
 
 int main (int argc, char *argv[])
@@ -287,7 +326,12 @@ int main (int argc, char *argv[])
       fprintf (stderr, "ERROR: No input file...\n\nUSAGE: %s EIT\n", argv[0]);
       exit (-1);
     }
-  printf ("[\n");
+
+  int num_files = argc - 1;
+
+  if (num_files > 1)
+    printf ("[\n");
+
   FILE *fp;
   for (int k = 1; k < argc; ++k)
     {
@@ -303,14 +347,15 @@ int main (int argc, char *argv[])
         exit(-1);
       }
 
+      // Die EITs die bei mir so rumliegen, haben max 1100 byte
       #define BUF_SIZE 2000
       uint8_t buf[BUF_SIZE];
       size_t num = fread (buf, 1, BUF_SIZE, fp);
-      printf ("  \"num_bytes\": %i,\n", num);
+      //printf ("  \"num_bytes\": %i,\n", num);
 
       if (num == BUF_SIZE)
         {
-          fprintf (stderr, "ERROR: Buffer zu klein...\n");
+          fprintf (stderr, "ERROR: Buffer zu klein. Möglicherweise ist das gar kein EIT...\n");
           exit (-1);
         }
 
@@ -481,7 +526,8 @@ int main (int argc, char *argv[])
 #endif
     printf ("}\n");
   }
-  printf ("]\n");
+  if (num_files > 1)
+    printf ("]\n");
   return 0;
 }
 
