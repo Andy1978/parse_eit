@@ -110,63 +110,65 @@ void dump (const uint8_t *p, size_t len)
     printf ("%3i : 0x%02x  %3i '%c'\n", k, p[k], p[k], p[k]);
 }
 
-int text_to_utf8 (char *buf, size_t buflen, uint8_t *p, size_t len)
+// gibt die code_table für iconv zurück, aktualisiert p und len
+size_t get_code_table (char *p, size_t len, char **code_table)
 {
-  //uint8_t * const p_orig = p;
-  // Annex A, Seite 130
+  assert (len > 2);
+  size_t ret = 0;
+  //fprintf (stderr, "DEBUG crop_code_table: len = '%i'\n", *len);
 
+  // Annex A, Seite 130
   // A.2 If the first byte of the text field has a value in the range "0x20" to "0xFF"
   // then this and all subsequent bytes in the text item are coded using
   // the default character coding table (table 00 - Latin alphabet)
-  const char *code_table = "ISO-8859-1";
-  uint8_t first_byte_value = *p;
+  *code_table = "ISO-8859-1";
+  uint8_t first_byte_value = p[0];
 
   //printf ("first_byte_value = 0x%02x\n", first_byte_value);
   if (first_byte_value < 0x20)
     {
-      p++;
-      len--;
+      ret++;
 
       switch (first_byte_value)
         {
           case 0x01:
-            code_table = "ISO-8859-5";
+            *code_table = "ISO-8859-5";
             break;
           case 0x02:
-            code_table = "ISO-8859-6";
+            *code_table = "ISO-8859-6";
             break;
           case 0x03:
-            code_table = "ISO-8859-7";
+            *code_table = "ISO-8859-7";
             break;
           case 0x04:
-            code_table = "ISO-8859-8";
+            *code_table = "ISO-8859-8";
             break;
           case 0x05:
-            code_table = "ISO-8859-9";
+            *code_table = "ISO-8859-9";
             break;
           case 0x06:
-            code_table = "ISO-8859-10";
+            *code_table = "ISO-8859-10";
             break;
           case 0x07:
-            code_table = "ISO-8859-11";
+            *code_table = "ISO-8859-11";
             break;
           case 0x09:
-            code_table = "ISO-8859-13";
+            *code_table = "ISO-8859-13";
             break;
           case 0x0A:
-            code_table = "ISO-8859-14";
+            *code_table = "ISO-8859-14";
             break;
           case 0x0B:
-            code_table = "ISO-8859-15";
+            *code_table = "ISO-8859-15";
             break;
           case 0x11:
-            code_table = "ISO-10646";
+            *code_table = "ISO-10646";
             break;
           case 0x13:
-            code_table = "GB2312";
+            *code_table = "GB2312";
             break;
           case 0x15:
-            code_table = "ISO-10646/UTF8";
+            *code_table = "ISO-10646/UTF8";
             break;
           default:
             break;
@@ -174,55 +176,55 @@ int text_to_utf8 (char *buf, size_t buflen, uint8_t *p, size_t len)
 
       if (first_byte_value == 0x10) // dynamically selected part of ISO/IEC 8859
         {
-          uint8_t second_byte_value = *(p++);
+          uint8_t second_byte_value = p[1];
           assert (second_byte_value == 0x00);  // Table A.4
 
-          uint8_t third_byte_value = *(p++);
-          len -= 2;
+          uint8_t third_byte_value = p[2];
+          ret += 2;
 
           switch (third_byte_value)
             {
               case 0x01:
-                code_table = "ISO-8859-1";
+                *code_table = "ISO-8859-1";
                 break;
               case 0x02:
-                code_table = "ISO-8859-2";
+                *code_table = "ISO-8859-2";
                 break;
               case 0x03:
-                code_table = "ISO-8859-3";
+                *code_table = "ISO-8859-3";
                 break;
               case 0x04:
-                code_table = "ISO-8859-4";
+                *code_table = "ISO-8859-4";
                 break;
               case 0x05:
-                code_table = "ISO-8859-5";
+                *code_table = "ISO-8859-5";
                 break;
               case 0x06:
-                code_table = "ISO-8859-6";
+                *code_table = "ISO-8859-6";
                 break;
               case 0x07:
-                code_table = "ISO-8859-7";
+                *code_table = "ISO-8859-7";
                 break;
               case 0x08:
-                code_table = "ISO-8859-8";
+                *code_table = "ISO-8859-8";
                 break;
               case 0x09:
-                code_table = "ISO-8859-9";
+                *code_table = "ISO-8859-9";
                 break;
               case 0x0A:
-                code_table = "ISO-8859-10";
+                *code_table = "ISO-8859-10";
                 break;
               case 0x0B:
-                code_table = "ISO-8859-11";
+                *code_table = "ISO-8859-11";
                 break;
               case 0x0D:
-                code_table = "ISO-8859-13";
+                *code_table = "ISO-8859-13";
                 break;
               case 0x0E:
-                code_table = "ISO-8859-14";
+                *code_table = "ISO-8859-14";
                 break;
               case 0x0F:
-                code_table = "ISO-8859-15";
+                *code_table = "ISO-8859-15";
                 break;
               default:
                 break;
@@ -230,42 +232,101 @@ int text_to_utf8 (char *buf, size_t buflen, uint8_t *p, size_t len)
         }
     }
 
+  //fprintf (stderr, "DEBUG code_table = '%s'\n", *code_table);
 
-  //printf ("code_table = '%s'\n", code_table);
+  return ret;
+}
 
-  iconv_t cd;
+void print_JSON_escaped (const char *p)
+{
+  while (*p)
+    {
+      if (*p == '"' || *p == '\\' || ('\x00' <= *p && *p <= '\x1f'))
+        printf ("\\u%04x", (int)*p);
+      else
+        putchar (*p);
+      p++;
+    }
+}
 
-  cd = iconv_open ("UTF−8", code_table);
+void dump_text (uint8_t *p, size_t len, char append)
+{
+  size_t outbytesleft = 2048;
+  char *outbuf = (char *) malloc (outbytesleft);
+
+  char *code_table;
+  size_t inc = get_code_table (p, len, &code_table);
+
+  // get_code_table gibt die Anzahl Zeichen zurück, die für die code Tabelle verwendet wurden (zwischen 0 und 3 Byte)
+  //printf ("DEBUG: inc = %zi, code_table = '%s'\n", inc, code_table);
+  p += inc;
+  len -= inc;
+
+  iconv_t cd = iconv_open ("UTF−8", code_table);
   if (cd == (iconv_t) -1)
     {
       fprintf (stderr, "iconv_open failed: %i = '%s'\n", errno, strerror (errno));
       exit (-1);
     }
 
-  size_t outbytesleft = buflen;
-  char *pout = buf;
+  static char *bytes_left = 0;
+
+  if (append && bytes_left)
+    {
+      size_t num_bytes_left = strlen (bytes_left);
+      p -= num_bytes_left;
+      strncpy (p, bytes_left, num_bytes_left);
+    }
+
+  if (bytes_left)
+    free (bytes_left);
+  bytes_left = 0;
+
+  char *pout = outbuf;
   char *pin = p;
+
+  // copy machen und die letzten Zeichen anzeigen
+  //~ uint8_t temp[len + 1];
+  //~ strncpy (temp, p, len);
+  //~ temp[len] = 0;
+  //~ fflush (stdout);
+  //~ fprintf (stderr, "temp = '%s'\n", temp);
+  //~ fprintf (stderr, "%#x\n", temp[len - 3]);
+  //~ fprintf (stderr, "%#x\n", temp[len - 2]);
+  //~ fprintf (stderr, "%#x\n", temp[len - 1]);
+  //~ fprintf (stderr, "#x\n", temp[len]);
 
   iconv (cd, NULL, NULL, &pout, &outbytesleft);
   size_t nconv = iconv (cd, &pin, &len, &pout, &outbytesleft);
-  
-  //printf ("nconv = %zi\n", nconv);
 
   if (nconv == (size_t) -1)
     {
-      fprintf (stderr, "ERROR: iconv failed with '%s'", strerror (errno));
-      
-      if (nconv == EILSEQ)
-        fprintf (stderr, ": invalid multibyte sequence '%s'\n", pin);
-      else if (nconv == EINVAL)
-        fprintf (stderr, ": incomplete multibyte sequence '%s'\n", pin);
-      else if (nconv == E2BIG)
-        fprintf (stderr, ": output buffer too small\n");
+      if (errno == EINVAL)
+        {
+          // das kann vorkommen, wenn im "Sonderzeichen" auf extended_event_descriptor gesplittet wurde
+          // z.B. ./samples/20190218_2139__ProSieben__The_Big_Bang_Theory.eit
+          bytes_left = strndup (pin, len);
+        }
       else
-        fprintf (stderr, "\n");
+        {
+          fprintf (stderr, "ERRROR: iconv failed with code %i: '%s'", errno, strerror (errno));
+
+          if (errno == EILSEQ)
+            {
+              fprintf (stderr, ": invalid multibyte sequence '%s' at index %li\n", pin, (uint8_t*) pin - p);
+              exit (-1);
+            }
+          else if (errno == E2BIG)
+            {
+              fprintf (stderr, ": output buffer too small\n");
+              exit (-1);
+            }
+          else
+            fprintf (stderr, "\n");
+        }
     }
-  else
-    *pout = 0;
+
+  *pout = 0;
 
   //printf ("outbuf = '%s'\n", outbuf);
   //assert (nconv == 0);
@@ -290,33 +351,11 @@ int text_to_utf8 (char *buf, size_t buflen, uint8_t *p, size_t len)
 
   if (iconv_close (cd) != 0)
     perror ("iconv_close");
-  
-  return nconv;
-}
 
-void print_JSON_escaped (const char *p)
-{
-  while (*p)
-    {
-      if (*p == '"' || *p == '\\' || ('\x00' <= *p && *p <= '\x1f'))
-        printf ("\\u%04x", (int)*p);
-      else
-        putchar (*p);
-      p++;
-    }
-}
-
-void dump_text (uint8_t *p, size_t len)
-{
-  size_t outbytesleft = 2048;
-  char *outbuf = (char *) malloc (outbytesleft);
-
-  text_to_utf8 (outbuf, outbytesleft, p, len);
-  
   print_JSON_escaped (outbuf);
 
   free (outbuf);
-  
+
 }
 
 int main (int argc, char *argv[])
@@ -387,7 +426,7 @@ int main (int argc, char *argv[])
       printf ("  \"duration\": \"%02i:%02i:%02i\",\n", dur.hour, dur.minute, dur.second);
       printf ("  \"running_status\": %i,\n", running_status);
       printf ("  \"free_CA_mode\": %i,\n", free_CA_mode);
-      
+
       //printf ("descriptors_loop_length = %i\n", descriptors_loop_length);
 
       p += 2;
@@ -423,7 +462,7 @@ int main (int argc, char *argv[])
             p += 1;
 
             printf ("    \"event_name\": \"");
-            dump_text (p, event_name_length);
+            dump_text (p, event_name_length, 0);
             printf ("\",\n");
 
             p += event_name_length;
@@ -433,7 +472,7 @@ int main (int argc, char *argv[])
             p += 1;
 
             printf ("    \"text\": \"");
-            dump_text (p, text_length);
+            dump_text (p, text_length, 0);
             printf ("\"\n  },\n");
             p += text_length;
           }
@@ -462,7 +501,7 @@ int main (int argc, char *argv[])
 
             // Tabelle 53, Seite 64
             uint8_t length_of_items = *(p++);   // kann auch 0 sein
-            //printf ("length_of_items = %i\n", length_of_items);
+           // printf ("length_of_items = %i\n", length_of_items);
 
             if (length_of_items > 0)
               {
@@ -473,7 +512,7 @@ int main (int argc, char *argv[])
             uint8_t text_length = *(p++);
             //printf ("text_length = %i\n", text_length);
 
-            dump_text (p, text_length);
+            dump_text (p, text_length, descriptor_number > 0);
 
             // Sind wir am Ende?
             if (descriptor_number == last_descriptor_number)
