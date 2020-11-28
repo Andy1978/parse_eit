@@ -466,7 +466,7 @@ int main (int argc, char *argv[])
             p += 3;
 
             uint8_t event_name_length = p[0];
-            printf ("    \"event_name_length\": %i,\n", event_name_length);
+            //printf ("    \"event_name_length\": %i,\n", event_name_length);
             p += 1;
 
             printf ("    \"event_name\": \"");
@@ -552,16 +552,20 @@ int main (int argc, char *argv[])
             //printf ("    \"text\": \"");
             // hier keine Länge, muss man sich wohl aus descriptor_length berechnen
             size_t len = descriptor_length - 6;
-            //printf ("len = %zu\n", len);
-            //dump_text (p, len);
+            //dump_text (p, len, 0);
+
             //printf ("\"\n  }\n");
             p += len;
 
           }
         else
           {
-            fprintf (stderr, "Unbekannter descriptor_tag %#x\n", descriptor_tag);
-            exit (-1);
+            int bytes_left = buf + num - p;
+            if (bytes_left > 0)
+              {
+                fprintf (stderr, "Unbekannter descriptor_tag %#x, descriptor_length=%i, bytes left = %li\n", descriptor_tag, descriptor_length, bytes_left);
+                exit (-1);
+              }
           }
 
         last_descriptor_tag = descriptor_tag;
