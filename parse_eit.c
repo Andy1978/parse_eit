@@ -113,7 +113,6 @@ void dump (const uint8_t *p, size_t len)
 // gibt die code_table für iconv zurück, aktualisiert p und len
 size_t get_code_table (char *p, size_t len, char **code_table)
 {
-  assert (len > 2);
   size_t ret = 0;
   //fprintf (stderr, "DEBUG crop_code_table: len = '%i'\n", *len);
 
@@ -122,116 +121,125 @@ size_t get_code_table (char *p, size_t len, char **code_table)
   // then this and all subsequent bytes in the text item are coded using
   // the default character coding table (table 00 - Latin alphabet)
   *code_table = "ISO-8859-1";
-  uint8_t first_byte_value = p[0];
 
-  //printf ("first_byte_value = 0x%02x\n", first_byte_value);
-  if (first_byte_value < 0x20)
+  if (len >= 1)
     {
-      ret++;
-
-      switch (first_byte_value)
+      uint8_t first_byte_value = p[0];
+      //printf ("first_byte_value = 0x%02x\n", first_byte_value);
+      if (first_byte_value < 0x20)
         {
-          case 0x01:
-            *code_table = "ISO-8859-5";
-            break;
-          case 0x02:
-            *code_table = "ISO-8859-6";
-            break;
-          case 0x03:
-            *code_table = "ISO-8859-7";
-            break;
-          case 0x04:
-            *code_table = "ISO-8859-8";
-            break;
-          case 0x05:
-            *code_table = "ISO-8859-9";
-            break;
-          case 0x06:
-            *code_table = "ISO-8859-10";
-            break;
-          case 0x07:
-            *code_table = "ISO-8859-11";
-            break;
-          case 0x09:
-            *code_table = "ISO-8859-13";
-            break;
-          case 0x0A:
-            *code_table = "ISO-8859-14";
-            break;
-          case 0x0B:
-            *code_table = "ISO-8859-15";
-            break;
-          case 0x11:
-            *code_table = "ISO-10646";
-            break;
-          case 0x13:
-            *code_table = "GB2312";
-            break;
-          case 0x15:
-            *code_table = "ISO-10646/UTF8";
-            break;
-          default:
-            break;
-        }
-
-      if (first_byte_value == 0x10) // dynamically selected part of ISO/IEC 8859
-        {
-          uint8_t second_byte_value = p[1];
-          assert (second_byte_value == 0x00);  // Table A.4
-
-          uint8_t third_byte_value = p[2];
-          ret += 2;
-
-          switch (third_byte_value)
+          ret++;
+          switch (first_byte_value)
             {
               case 0x01:
-                *code_table = "ISO-8859-1";
-                break;
-              case 0x02:
-                *code_table = "ISO-8859-2";
-                break;
-              case 0x03:
-                *code_table = "ISO-8859-3";
-                break;
-              case 0x04:
-                *code_table = "ISO-8859-4";
-                break;
-              case 0x05:
                 *code_table = "ISO-8859-5";
                 break;
-              case 0x06:
+              case 0x02:
                 *code_table = "ISO-8859-6";
                 break;
-              case 0x07:
+              case 0x03:
                 *code_table = "ISO-8859-7";
                 break;
-              case 0x08:
+              case 0x04:
                 *code_table = "ISO-8859-8";
                 break;
-              case 0x09:
+              case 0x05:
                 *code_table = "ISO-8859-9";
                 break;
-              case 0x0A:
+              case 0x06:
                 *code_table = "ISO-8859-10";
                 break;
-              case 0x0B:
+              case 0x07:
                 *code_table = "ISO-8859-11";
                 break;
-              case 0x0D:
+              case 0x09:
                 *code_table = "ISO-8859-13";
                 break;
-              case 0x0E:
+              case 0x0A:
                 *code_table = "ISO-8859-14";
                 break;
-              case 0x0F:
+              case 0x0B:
                 *code_table = "ISO-8859-15";
+                break;
+              case 0x11:
+                *code_table = "ISO-10646";
+                break;
+              case 0x13:
+                *code_table = "GB2312";
+                break;
+              case 0x15:
+                *code_table = "ISO-10646/UTF8";
                 break;
               default:
                 break;
             }
+
+          if (first_byte_value == 0x10) // dynamically selected part of ISO/IEC 8859
+            {
+              if (len >= 3)
+                {
+                  uint8_t second_byte_value = p[1];
+                  assert (second_byte_value == 0x00);  // Table A.4
+
+                  uint8_t third_byte_value = p[2];
+                  ret += 2;
+
+                  switch (third_byte_value)
+                    {
+                      case 0x01:
+                        *code_table = "ISO-8859-1";
+                        break;
+                      case 0x02:
+                        *code_table = "ISO-8859-2";
+                        break;
+                      case 0x03:
+                        *code_table = "ISO-8859-3";
+                        break;
+                      case 0x04:
+                        *code_table = "ISO-8859-4";
+                        break;
+                      case 0x05:
+                        *code_table = "ISO-8859-5";
+                        break;
+                      case 0x06:
+                        *code_table = "ISO-8859-6";
+                        break;
+                      case 0x07:
+                        *code_table = "ISO-8859-7";
+                        break;
+                      case 0x08:
+                        *code_table = "ISO-8859-8";
+                        break;
+                      case 0x09:
+                        *code_table = "ISO-8859-9";
+                        break;
+                      case 0x0A:
+                        *code_table = "ISO-8859-10";
+                        break;
+                      case 0x0B:
+                        *code_table = "ISO-8859-11";
+                        break;
+                      case 0x0D:
+                        *code_table = "ISO-8859-13";
+                        break;
+                      case 0x0E:
+                        *code_table = "ISO-8859-14";
+                        break;
+                      case 0x0F:
+                        *code_table = "ISO-8859-15";
+                        break;
+                      default:
+                        break;
+                    }
+                }
+              else
+                {
+                  fprintf (stderr, "ERROR: dynamically selected part of ISO/IEC 8859 but len = %i (<3)\n", len);
+                  exit (-1);
+                }
+            }
         }
     }
-
   //fprintf (stderr, "DEBUG code_table = '%s'\n", *code_table);
 
   return ret;
@@ -468,7 +476,7 @@ int main (int argc, char *argv[])
             p += event_name_length;
 
             uint8_t text_length = p[0];
-            printf ("    \"text_length\": %i,\n", text_length);
+            //printf ("    \"text_length\": %i,\n", text_length);
             p += 1;
 
             printf ("    \"text\": \"");
@@ -563,7 +571,7 @@ int main (int argc, char *argv[])
 #ifdef DEBUG
       printf ("End: Bytes left: %li\n", buf + num - p);
 #endif
-    printf ("}\n");
+    printf (" }%s\n", (k < argc - 1)? "," : "");
   }
   if (num_files > 1)
     printf ("]\n");
