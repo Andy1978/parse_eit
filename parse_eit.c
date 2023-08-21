@@ -3,7 +3,7 @@
   \author Andreas Weber
 
   tool for parsing EIT (DVB Event Information Table) files
-  Copyright (C) 2016..2020 Andreas Weber
+  Copyright (C) 2016..2023 Andreas Weber
 
   Gibt die Informationen ine einer DreamBox 7025+ (vielleicht auch andere)
   .eit Datei als Text aus.
@@ -104,11 +104,13 @@ uint8_t parse_start_time (const uint8_t *p, size_t len, struct s_start_time *s)
   return 5;
 }
 
+/*
 void dump (const uint8_t *p, size_t len)
 {
   for (unsigned int k = 0; k < len; ++k)
-    printf ("%3i : 0x%02x  %3i '%c'\n", k, p[k], p[k], p[k]);
+    printf ("%3u : 0x%02x  %3i '%c'\n", k, p[k], p[k], p[k]);
 }
+*/
 
 // gibt die code_table für iconv zurück, aktualisiert p und len
 size_t get_code_table (char *p, size_t len, char **code_table)
@@ -131,47 +133,47 @@ size_t get_code_table (char *p, size_t len, char **code_table)
           ret++;
           switch (first_byte_value)
             {
-              case 0x01:
-                *code_table = "ISO-8859-5";
-                break;
-              case 0x02:
-                *code_table = "ISO-8859-6";
-                break;
-              case 0x03:
-                *code_table = "ISO-8859-7";
-                break;
-              case 0x04:
-                *code_table = "ISO-8859-8";
-                break;
-              case 0x05:
-                *code_table = "ISO-8859-9";
-                break;
-              case 0x06:
-                *code_table = "ISO-8859-10";
-                break;
-              case 0x07:
-                *code_table = "ISO-8859-11";
-                break;
-              case 0x09:
-                *code_table = "ISO-8859-13";
-                break;
-              case 0x0A:
-                *code_table = "ISO-8859-14";
-                break;
-              case 0x0B:
-                *code_table = "ISO-8859-15";
-                break;
-              case 0x11:
-                *code_table = "ISO-10646";
-                break;
-              case 0x13:
-                *code_table = "GB2312";
-                break;
-              case 0x15:
-                *code_table = "ISO-10646/UTF8";
-                break;
-              default:
-                break;
+            case 0x01:
+              *code_table = "ISO-8859-5";
+              break;
+            case 0x02:
+              *code_table = "ISO-8859-6";
+              break;
+            case 0x03:
+              *code_table = "ISO-8859-7";
+              break;
+            case 0x04:
+              *code_table = "ISO-8859-8";
+              break;
+            case 0x05:
+              *code_table = "ISO-8859-9";
+              break;
+            case 0x06:
+              *code_table = "ISO-8859-10";
+              break;
+            case 0x07:
+              *code_table = "ISO-8859-11";
+              break;
+            case 0x09:
+              *code_table = "ISO-8859-13";
+              break;
+            case 0x0A:
+              *code_table = "ISO-8859-14";
+              break;
+            case 0x0B:
+              *code_table = "ISO-8859-15";
+              break;
+            case 0x11:
+              *code_table = "ISO-10646";
+              break;
+            case 0x13:
+              *code_table = "GB2312";
+              break;
+            case 0x15:
+              *code_table = "ISO-10646/UTF8";
+              break;
+            default:
+              break;
             }
 
           if (first_byte_value == 0x10) // dynamically selected part of ISO/IEC 8859
@@ -186,55 +188,55 @@ size_t get_code_table (char *p, size_t len, char **code_table)
 
                   switch (third_byte_value)
                     {
-                      case 0x01:
-                        *code_table = "ISO-8859-1";
-                        break;
-                      case 0x02:
-                        *code_table = "ISO-8859-2";
-                        break;
-                      case 0x03:
-                        *code_table = "ISO-8859-3";
-                        break;
-                      case 0x04:
-                        *code_table = "ISO-8859-4";
-                        break;
-                      case 0x05:
-                        *code_table = "ISO-8859-5";
-                        break;
-                      case 0x06:
-                        *code_table = "ISO-8859-6";
-                        break;
-                      case 0x07:
-                        *code_table = "ISO-8859-7";
-                        break;
-                      case 0x08:
-                        *code_table = "ISO-8859-8";
-                        break;
-                      case 0x09:
-                        *code_table = "ISO-8859-9";
-                        break;
-                      case 0x0A:
-                        *code_table = "ISO-8859-10";
-                        break;
-                      case 0x0B:
-                        *code_table = "ISO-8859-11";
-                        break;
-                      case 0x0D:
-                        *code_table = "ISO-8859-13";
-                        break;
-                      case 0x0E:
-                        *code_table = "ISO-8859-14";
-                        break;
-                      case 0x0F:
-                        *code_table = "ISO-8859-15";
-                        break;
-                      default:
-                        break;
+                    case 0x01:
+                      *code_table = "ISO-8859-1";
+                      break;
+                    case 0x02:
+                      *code_table = "ISO-8859-2";
+                      break;
+                    case 0x03:
+                      *code_table = "ISO-8859-3";
+                      break;
+                    case 0x04:
+                      *code_table = "ISO-8859-4";
+                      break;
+                    case 0x05:
+                      *code_table = "ISO-8859-5";
+                      break;
+                    case 0x06:
+                      *code_table = "ISO-8859-6";
+                      break;
+                    case 0x07:
+                      *code_table = "ISO-8859-7";
+                      break;
+                    case 0x08:
+                      *code_table = "ISO-8859-8";
+                      break;
+                    case 0x09:
+                      *code_table = "ISO-8859-9";
+                      break;
+                    case 0x0A:
+                      *code_table = "ISO-8859-10";
+                      break;
+                    case 0x0B:
+                      *code_table = "ISO-8859-11";
+                      break;
+                    case 0x0D:
+                      *code_table = "ISO-8859-13";
+                      break;
+                    case 0x0E:
+                      *code_table = "ISO-8859-14";
+                      break;
+                    case 0x0F:
+                      *code_table = "ISO-8859-15";
+                      break;
+                    default:
+                      break;
                     }
                 }
               else
                 {
-                  fprintf (stderr, "ERROR: dynamically selected part of ISO/IEC 8859 but len = %i (<3)\n", len);
+                  fprintf (stderr, "ERROR: dynamically selected part of ISO/IEC 8859 but len = %zu (<3)\n", len);
                   exit (-1);
                 }
             }
@@ -321,7 +323,7 @@ void dump_text (uint8_t *p, size_t len, char append)
 
           if (errno == EILSEQ)
             {
-              fprintf (stderr, ": invalid multibyte sequence '%s' at index %li\n", pin, (uint8_t*) pin - p);
+              fprintf (stderr, ": invalid multibyte sequence '%s' at index %i\n", pin, (uint8_t*) pin - p);
               exit (-1);
             }
           else if (errno == E2BIG)
@@ -346,15 +348,15 @@ void dump_text (uint8_t *p, size_t len, char append)
   // wtf? 0xC28A ist wohl CR/LF, Seite 130 Annex A
 
   //~ for (unsigned int k = 0; k < (len - (code_table > 0)); ++k)
-    //~ {
-      //~ // FIMXE: check for buffer end
-      //~ if (   p[k] == 0xC2
-          //~ && k +1 < (len - (code_table > 0))
-          //~ && p[k+1] == 0x8A)
-        //~ k++; //ignore CR/LF
-      //~ else
-        //~ printf ("%c", p[k]);
-    //~ }
+  //~ {
+  //~ // FIMXE: check for buffer end
+  //~ if (   p[k] == 0xC2
+  //~ && k +1 < (len - (code_table > 0))
+  //~ && p[k+1] == 0x8A)
+  //~ k++; //ignore CR/LF
+  //~ else
+  //~ printf ("%c", p[k]);
+  //~ }
 
 
   if (iconv_close (cd) != 0)
@@ -389,13 +391,13 @@ int main (int argc, char *argv[])
 
       fp = fopen (fn, "rb");
       if (!fp)
-      {
-        fprintf (stderr, "error opening file %s\n", fn);
-        exit(-1);
-      }
+        {
+          fprintf (stderr, "error opening file %s\n", fn);
+          exit(-1);
+        }
 
       // Die EITs die bei mir so rumliegen, haben max 1100 byte
-      #define BUF_SIZE 2000
+#define BUF_SIZE 2000
       uint8_t buf[BUF_SIZE];
       size_t num = fread (buf, 1, BUF_SIZE, fp);
       //printf ("  \"num_bytes\": %i,\n", num);
@@ -440,143 +442,143 @@ int main (int argc, char *argv[])
       p += 2;
 
       // Seite 39, Tabelle 12
-      #define SHORT_EVENT_DESCRIPTOR 0x4d
-      #define EXTENDED_EVENT_DESCRIPTOR 0x4e
-      #define COMPONENT_DESCRIPTOR 0x50
+#define SHORT_EVENT_DESCRIPTOR 0x4d
+#define EXTENDED_EVENT_DESCRIPTOR 0x4e
+#define COMPONENT_DESCRIPTOR 0x50
 
       uint8_t last_descriptor_tag = 0;
       char first_descriptor = 1;
       while (p < (buf + num))
-      {
-        uint8_t descriptor_tag = p[0];
-        uint8_t descriptor_length = p[1];
+        {
+          uint8_t descriptor_tag = p[0];
+          uint8_t descriptor_length = p[1];
 
-        //fprintf (stderr, "Bytes left: %li\n", buf + num - p);
-        //fprintf (stderr, "descriptor_tag = %#x\n", descriptor_tag);
-        //fprintf (stderr, "descriptor_length = %i\n", descriptor_length);  // Länge der folgenden Daten in Bytes
+          //fprintf (stderr, "Bytes left: %li\n", buf + num - p);
+          //fprintf (stderr, "descriptor_tag = %#x\n", descriptor_tag);
+          //fprintf (stderr, "descriptor_length = %i\n", descriptor_length);  // Länge der folgenden Daten in Bytes
 
-        p += 2;
+          p += 2;
 
-        // Seite 87, Kapitel 6.2.37 : Short event descriptor
-        if (descriptor_tag == SHORT_EVENT_DESCRIPTOR)
-          {
-            printf ("  \"short_event_descriptor\":\n  {\n");
-            printf ("    \"iso_639_2_language_code\": \"%c%c%c\",\n", p[0], p[1], p[2]);
+          // Seite 87, Kapitel 6.2.37 : Short event descriptor
+          if (descriptor_tag == SHORT_EVENT_DESCRIPTOR)
+            {
+              printf ("  \"short_event_descriptor\":\n  {\n");
+              printf ("    \"iso_639_2_language_code\": \"%c%c%c\",\n", p[0], p[1], p[2]);
 
-            p += 3;
+              p += 3;
 
-            uint8_t event_name_length = p[0];
-            //printf ("    \"event_name_length\": %i,\n", event_name_length);
-            p += 1;
+              uint8_t event_name_length = p[0];
+              //printf ("    \"event_name_length\": %i,\n", event_name_length);
+              p += 1;
 
-            printf ("    \"event_name\": \"");
-            dump_text (p, event_name_length, 0);
-            printf ("\",\n");
+              printf ("    \"event_name\": \"");
+              dump_text (p, event_name_length, 0);
+              printf ("\",\n");
 
-            p += event_name_length;
+              p += event_name_length;
 
-            uint8_t text_length = p[0];
-            //printf ("    \"text_length\": %i,\n", text_length);
-            p += 1;
+              uint8_t text_length = p[0];
+              //printf ("    \"text_length\": %i,\n", text_length);
+              p += 1;
 
-            printf ("    \"text\": \"");
-            dump_text (p, text_length, 0);
-            printf ("\"\n  },\n");
-            p += text_length;
-          }
-        // Seite 64, Kapitel 6.2.15 : Extended event descriptor
-        else if (descriptor_tag == EXTENDED_EVENT_DESCRIPTOR)
-          {
-            //printf ("EXTENDED_EVENT_DESCRIPTOR\n");
+              printf ("    \"text\": \"");
+              dump_text (p, text_length, 0);
+              printf ("\"\n  },\n");
+              p += text_length;
+            }
+          // Seite 64, Kapitel 6.2.15 : Extended event descriptor
+          else if (descriptor_tag == EXTENDED_EVENT_DESCRIPTOR)
+            {
+              //printf ("EXTENDED_EVENT_DESCRIPTOR\n");
 
-            uint8_t descriptor_number = p[0] >> 4;
-            uint8_t last_descriptor_number = p[0] & 0x0F;
-            p += 1;
-
-#ifdef DEBUG
-            printf ("descriptor_number = %i\n", descriptor_number);
-            printf ("last_descriptor_number = %i\n", last_descriptor_number);
-#endif
-
-            if (descriptor_number == 0)
-              {
-                printf ("  \"extended_event_descriptor\":\n  {\n");
-                printf ("    \"iso_639_2_language_code\": \"%c%c%c\",\n", p[0], p[1], p[2]);
-                printf ("    \"text\": \"");
-              }
-
-            p += 3;
-
-            // Tabelle 53, Seite 64
-            uint8_t length_of_items = *(p++);   // kann auch 0 sein
-           // printf ("length_of_items = %i\n", length_of_items);
-
-            if (length_of_items > 0)
-              {
-                fprintf (stderr, "Noch nicht implementiert...\n");
-                exit (-1);
-              }
-
-            uint8_t text_length = *(p++);
-            //printf ("text_length = %i\n", text_length);
-
-            dump_text (p, text_length, descriptor_number > 0);
-
-            // Sind wir am Ende?
-            if (descriptor_number == last_descriptor_number)
-              printf ("\"\n  }\n");
-
-            p += text_length;
-          }
-        // Seite 46, Kapitel 6.2.8
-        else if (descriptor_tag == COMPONENT_DESCRIPTOR)
-          {
-            uint8_t stream_content_ext = p[0] >> 4;
-            uint8_t stream_content = p[0] & 0x0F;
-            uint8_t component_type = p[1];
-            uint8_t component_tag = p[2];
+              uint8_t descriptor_number = p[0] >> 4;
+              uint8_t last_descriptor_number = p[0] & 0x0F;
+              p += 1;
 
 #ifdef DEBUG
-            printf ("COMPONENT_DESCRIPTOR\n");
-            printf ("stream_content_ext = %i\n", stream_content_ext);
-            printf ("stream_content = %i\n", stream_content);
-            printf ("component_type = %i\n", component_type);
-            printf ("component_tag = %i\n", component_tag);
-            printf ("iso_639_2_language_code = \"%c%c%c\"\n", p[3], p[4], p[5]);
+              printf ("descriptor_number = %i\n", descriptor_number);
+              printf ("last_descriptor_number = %i\n", last_descriptor_number);
 #endif
-            p += 6;
 
-            //if (last_descriptor_tag != COMPONENT_DESCRIPTOR)
-            //  printf ("  \"component_descriptor\":\n  {\n");
+              if (descriptor_number == 0)
+                {
+                  printf ("  \"extended_event_descriptor\":\n  {\n");
+                  printf ("    \"iso_639_2_language_code\": \"%c%c%c\",\n", p[0], p[1], p[2]);
+                  printf ("    \"text\": \"");
+                }
 
-            //printf ("    \"text\": \"");
-            // hier keine Länge, muss man sich wohl aus descriptor_length berechnen
-            size_t len = descriptor_length - 6;
-            //dump_text (p, len, 0);
+              p += 3;
 
-            //printf ("\"\n  }\n");
-            p += len;
+              // Tabelle 53, Seite 64
+              uint8_t length_of_items = *(p++);   // kann auch 0 sein
+              // printf ("length_of_items = %i\n", length_of_items);
 
-          }
-        else
-          {
-            int bytes_left = buf + num - p;
-            if (bytes_left > 0)
-              {
-                fprintf (stderr, "Unbekannter descriptor_tag %#x, descriptor_length=%i, bytes left = %li\n", descriptor_tag, descriptor_length, bytes_left);
-                exit (-1);
-              }
-          }
+              if (length_of_items > 0)
+                {
+                  fprintf (stderr, "Noch nicht implementiert...\n");
+                  exit (-1);
+                }
 
-        last_descriptor_tag = descriptor_tag;
-        first_descriptor = 0;
-      }
+              uint8_t text_length = *(p++);
+              //printf ("text_length = %i\n", text_length);
+
+              dump_text (p, text_length, descriptor_number > 0);
+
+              // Sind wir am Ende?
+              if (descriptor_number == last_descriptor_number)
+                printf ("\"\n  }\n");
+
+              p += text_length;
+            }
+          // Seite 46, Kapitel 6.2.8
+          else if (descriptor_tag == COMPONENT_DESCRIPTOR)
+            {
+              uint8_t stream_content_ext = p[0] >> 4;
+              uint8_t stream_content = p[0] & 0x0F;
+              uint8_t component_type = p[1];
+              uint8_t component_tag = p[2];
+
+#ifdef DEBUG
+              printf ("COMPONENT_DESCRIPTOR\n");
+              printf ("stream_content_ext = %i\n", stream_content_ext);
+              printf ("stream_content = %i\n", stream_content);
+              printf ("component_type = %i\n", component_type);
+              printf ("component_tag = %i\n", component_tag);
+              printf ("iso_639_2_language_code = \"%c%c%c\"\n", p[3], p[4], p[5]);
+#endif
+              p += 6;
+
+              //if (last_descriptor_tag != COMPONENT_DESCRIPTOR)
+              //  printf ("  \"component_descriptor\":\n  {\n");
+
+              //printf ("    \"text\": \"");
+              // hier keine Länge, muss man sich wohl aus descriptor_length berechnen
+              size_t len = descriptor_length - 6;
+              //dump_text (p, len, 0);
+
+              //printf ("\"\n  }\n");
+              p += len;
+
+            }
+          else
+            {
+              int bytes_left = buf + num - p;
+              if (bytes_left > 0)
+                {
+                  fprintf (stderr, "Unbekannter descriptor_tag %#x, descriptor_length=%i, bytes left = %i\n", descriptor_tag, descriptor_length, bytes_left);
+                  exit (-1);
+                }
+            }
+
+          last_descriptor_tag = descriptor_tag;
+          first_descriptor = 0;
+        }
 
 #ifdef DEBUG
       printf ("End: Bytes left: %li\n", buf + num - p);
 #endif
-    printf (" }%s\n", (k < argc - 1)? "," : "");
-  }
+      printf (" }%s\n", (k < argc - 1)? "," : "");
+    }
   if (num_files > 1)
     printf ("]\n");
   return 0;
